@@ -21,6 +21,18 @@ async function git(repo, args) {
 
 export async function collectGitEvidence(repo, options = {}) {
   const inside = await git(repo, ["rev-parse", "--is-inside-work-tree"]);
+  const topLevel = inside.ok ? await git(repo, ["rev-parse", "--show-toplevel"]) : { ok: false, stdout: "" };
+  const fixtureWithoutOwnGit = options.fixture && topLevel.stdout && topLevel.stdout !== repo;
+  if (fixtureWithoutOwnGit) {
+    return {
+      available: false,
+      status: "",
+      recentCommits: [],
+      changedFiles: [],
+      warnings: []
+    };
+  }
+
   if (!inside.ok && !options.fixture) {
     return { available: false, status: "unknown", recentCommits: [], changedFiles: [], warnings: [inside.stderr] };
   }
