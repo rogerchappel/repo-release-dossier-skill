@@ -1,0 +1,59 @@
+# Repo Release Dossier Skill
+
+Use this skill when an agent needs to assemble release-candidate evidence from
+a local repository before asking a maintainer to ship. It is designed for small
+OSS repositories, agent-skill packages, and automation lanes that need a concise
+readiness summary.
+
+## Required Inputs
+
+- A local repository path.
+- Read access to git metadata when available.
+- Optional fixture mode for tests or non-git sample projects.
+
+## Tools
+
+Run the local CLI:
+
+```bash
+npx repo-release-dossier-skill --repo .
+```
+
+During local development in this repo:
+
+```bash
+node bin/repo-release-dossier.js --repo fixtures/sample-repo --fixture
+```
+
+## Side-Effect Boundaries
+
+This skill is read-only. It may inspect files, package scripts, git status, and
+recent commits. It must not push, merge, tag, publish packages, change branch
+protection, edit repository files, or write to external systems.
+
+## Approval Requirements
+
+No approval is needed for local inspection. Ask the maintainer before using the
+generated dossier to open or update a PR, and ask explicit approval before any
+external action that is outside this skill.
+
+## Workflow
+
+1. Run the CLI against the target repository.
+2. Review pass, warning, and fail sections.
+3. Copy exact verification commands and unresolved warnings into the release
+   candidate PR body.
+4. If classification is `hold`, stop and fix the missing evidence first.
+
+## Validation
+
+Run:
+
+```bash
+npm test
+npm run check
+npm run smoke
+```
+
+The fixture-backed tests verify package script detection, required docs checks,
+classification, and markdown rendering.
