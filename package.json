@@ -1,0 +1,31 @@
+{
+  "name": "repo-release-dossier-skill",
+  "version": "0.1.0",
+  "description": "Local-first agent skill for building release readiness dossiers from repository evidence.",
+  "type": "module",
+  "bin": {
+    "repo-release-dossier": "bin/repo-release-dossier.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/check.js",
+    "smoke": "node bin/repo-release-dossier.js --repo fixtures/sample-repo --fixture --json"
+  },
+  "keywords": [
+    "agent-skill",
+    "release-readiness",
+    "dossier",
+    "local-first"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "bin",
+    "src",
+    "docs",
+    "SKILL.md",
+    "README.md"
+  ]
+}
