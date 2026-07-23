@@ -13,3 +13,21 @@ test("renders release dossier sections", async () => {
   assert.match(markdown, /## Risks And Warnings/);
   assert.match(markdown, /Recommended classification: ship/);
 });
+
+test("renders the same changed file list exposed by JSON evidence", async () => {
+  const evidence = await analyzeRepository("fixtures/sample-repo", { fixture: true });
+  evidence.git.changedFiles = [
+    "deleted.txt",
+    "new-name.txt",
+    "old-name.txt",
+    "untracked.txt"
+  ];
+
+  const markdown = renderDossier(evidence);
+  const json = JSON.parse(JSON.stringify(evidence));
+
+  assert.deepEqual(json.git.changedFiles, evidence.git.changedFiles);
+  for (const file of json.git.changedFiles) {
+    assert.match(markdown, new RegExp(`^  - ${file}$`, "m"));
+  }
+});
