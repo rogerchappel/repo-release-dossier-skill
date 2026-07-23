@@ -24,9 +24,14 @@ The markdown dossier includes:
 
 - readiness classification and score
 - verification commands detected from package scripts
-- git status, changed files, and recent commits
+- git status, every dirty path, and recent commits
 - required documentation status
 - unresolved risks and release-candidate notes
+
+Dirty paths come from Git porcelain status, so the changed-file list includes
+untracked, staged, unstaged, renamed, copied, and deleted paths. For renames and
+copies, both the original and destination paths are reported. Markdown and JSON
+use the same `git.changedFiles` list.
 
 ## Safety
 
