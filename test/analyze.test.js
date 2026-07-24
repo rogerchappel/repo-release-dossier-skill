@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -36,6 +36,19 @@ test("analyzes fixture repository with docs and scripts", async () => {
   assert.ok(evidence.package.verificationScripts.includes("check"));
   assert.ok(evidence.package.verificationScripts.includes("smoke"));
   assert.equal(evidence.docs.required.every((doc) => doc.present), true);
+  assert.equal(evidence.classification, "ship");
+});
+
+test("treats a fixture outside any Git worktree as intentionally unavailable", async (t) => {
+  const parent = await mkdtemp(path.join(tmpdir(), "release-dossier-fixture-"));
+  const repo = path.join(parent, "sample-repo");
+  t.after(() => rm(parent, { recursive: true, force: true }));
+  await cp("fixtures/sample-repo", repo, { recursive: true });
+
+  const evidence = await analyzeRepository(repo, { fixture: true });
+
+  assert.equal(evidence.git.available, false);
+  assert.deepEqual(evidence.git.warnings, []);
   assert.equal(evidence.classification, "ship");
 });
 
