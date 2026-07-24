@@ -43,7 +43,7 @@ function dirtyPaths(porcelain) {
 export async function collectGitEvidence(repo, options = {}) {
   const inside = await git(repo, ["rev-parse", "--is-inside-work-tree"]);
   const topLevel = inside.ok ? await git(repo, ["rev-parse", "--show-toplevel"]) : { ok: false, stdout: "" };
-  const fixtureWithoutOwnGit = options.fixture && topLevel.stdout && topLevel.stdout !== repo;
+  const fixtureWithoutOwnGit = options.fixture && (!inside.ok || topLevel.stdout !== repo);
   if (fixtureWithoutOwnGit) {
     return {
       available: false,
