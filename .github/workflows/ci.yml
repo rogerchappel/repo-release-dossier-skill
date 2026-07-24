@@ -20,3 +20,9 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run smoke
+      - name: Validate exported tree
+        run: |
+          export_dir="$(mktemp -d)"
+          git archive HEAD | tar -x -C "$export_dir"
+          cd "$export_dir"
+          bash scripts/validate.sh
