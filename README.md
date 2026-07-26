@@ -2,7 +2,7 @@
 
 Build a concise release-candidate dossier from a local repository. The CLI
 collects git evidence, verification scripts, required docs, warnings, and
-release notes without mutating the target repo.
+release notes. It is read-only unless an output path is explicitly requested.
 
 ## Quickstart
 
@@ -35,6 +35,12 @@ use the same `git.changedFiles` list. Any dirty path adds an unresolved warning,
 prevents a `ship` classification, and prevents the Markdown summary from
 reporting `PASS`.
 
+When `--out` points inside the inspected repository, the CLI creates that file
+before collecting its final evidence. The resulting Markdown or JSON therefore
+reports the output artifact as a dirty path and cannot claim the repository is
+clean or `ship`-ready. The `sideEffects` field names the written artifact.
+Writing outside the inspected repository does not dirty its working tree.
+
 `--fixture` treats a target without its own Git worktree as intentionally clean
 so checked-in examples remain deterministic. If the fixture path is itself a
 Git worktree, its real status is inspected and dirty paths still block `ship`.
@@ -43,7 +49,7 @@ Git worktree, its real status is inspected and dirty paths still block `ship`.
 
 This tool is read-only by default. It does not tag, publish, merge, push, or call
 external services. The `--out` option writes only the generated dossier path
-chosen by the caller.
+chosen by the caller, and the dossier discloses that side effect.
 
 ## Examples
 

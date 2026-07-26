@@ -27,9 +27,12 @@ node bin/repo-release-dossier.js --repo fixtures/sample-repo --fixture
 
 ## Side-Effect Boundaries
 
-This skill is read-only. It may inspect files, package scripts, git status, and
-recent commits. It must not push, merge, tag, publish packages, change branch
-protection, edit repository files, or write to external systems.
+This skill is read-only unless the caller supplies `--out`. It may inspect
+files, package scripts, git status, and recent commits. With `--out`, it writes
+only the requested dossier; an output inside the inspected repository is
+included in the final dirty-tree evidence and blocks a `ship` classification.
+It must not push, merge, tag, publish packages, change branch protection, edit
+other repository files, or write to external systems.
 
 ## Approval Requirements
 
