@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { analyzeRepository } from "../src/analyze.js";
+import { renderDossier } from "../src/render.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -19,7 +20,7 @@ async function createGitFixture() {
   await git(repo, "config", "user.name", "Test User");
   await git(repo, "config", "user.email", "test@example.com");
 
-  for (const file of ["deleted.txt", "modified.txt", "old-name.txt"]) {
+  for (const file of ["copy-source.txt", "deleted.txt", "modified.txt", "old-name.txt"]) {
     await writeFile(path.join(repo, file), `${file}\n`);
   }
   await git(repo, "add", ".");
@@ -60,34 +61,54 @@ test("warns when verification scripts are missing", async () => {
   assert.equal(evidence.classification, "hold");
 });
 
-test("reports an untracked file as changed git evidence", async (t) => {
+test("a clean Git repository can ship", async (t) => {
   const repo = await createGitFixture();
   t.after(() => rm(repo, { recursive: true, force: true }));
-  await writeFile(path.join(repo, "untracked.txt"), "not committed\n");
 
   const evidence = await analyzeRepository(repo);
 
-  assert.match(evidence.git.status, /\?\? untracked\.txt/);
-  assert.deepEqual(evidence.git.changedFiles, ["untracked.txt"]);
+  assert.equal(evidence.classification, "hold");
+  assert.equal(evidence.git.status, "");
+  assert.deepEqual(evidence.git.changedFiles, []);
+  assert.doesNotMatch(renderDossier(evidence), /^PASS:/m);
   assert.match(evidence.git.recentCommits[0], /initial fixture/);
 });
 
-test("reports staged, unstaged, deleted, and renamed dirty paths", async (t) => {
-  const repo = await createGitFixture();
-  t.after(() => rm(repo, { recursive: true, force: true }));
-  await writeFile(path.join(repo, "modified.txt"), "unstaged change\n");
-  await rm(path.join(repo, "deleted.txt"));
-  await git(repo, "mv", "old-name.txt", "new-name.txt");
-  await writeFile(path.join(repo, "staged.txt"), "staged change\n");
-  await git(repo, "add", "staged.txt");
+const dirtyCases = [
+  ["untracked", async (repo) => writeFile(path.join(repo, "untracked.txt"), "untracked\n"),
+    ["untracked.txt"]],
+  ["staged", async (repo) => {
+    await writeFile(path.join(repo, "staged.txt"), "staged\n");
+    await git(repo, "add", "staged.txt");
+  }, ["staged.txt"]],
+  ["unstaged", async (repo) => writeFile(path.join(repo, "modified.txt"), "modified\n"),
+    ["modified.txt"]],
+  ["deleted", async (repo) => rm(path.join(repo, "deleted.txt")),
+    ["deleted.txt"]],
+  ["renamed", async (repo) => git(repo, "mv", "old-name.txt", "new-name.txt"),
+    ["new-name.txt", "old-name.txt"]],
+  ["copied", async (repo) => {
+    await cp(path.join(repo, "copy-source.txt"), path.join(repo, "copy.txt"));
+    await git(repo, "add", "copy.txt");
+  }, ["copy-source.txt", "copy.txt"]]
+];
 
-  const evidence = await analyzeRepository(repo);
+for (const [kind, mutate, changedFiles] of dirtyCases) {
+  test(`blocks ship classification for ${kind} changes`, async (t) => {
+    const repo = await createGitFixture();
+    t.after(() => rm(repo, { recursive: true, force: true }));
+    await mutate(repo);
 
-  assert.deepEqual(evidence.git.changedFiles, [
-    "deleted.txt",
-    "modified.txt",
-    "new-name.txt",
-    "old-name.txt",
-    "staged.txt"
-  ]);
-});
+    const evidence = await analyzeRepository(repo);
+    const markdown = renderDossier(evidence);
+
+    assert.notEqual(evidence.classification, "ship");
+    assert.match(evidence.warnings.join("\n"), /working tree is dirty/i);
+    assert.deepEqual(evidence.git.changedFiles, changedFiles);
+    assert.doesNotMatch(markdown, /^PASS:/m);
+    assert.match(markdown, /Working tree: WARN dirty/);
+    for (const file of changedFiles) {
+      assert.match(markdown, new RegExp(`^  - ${file}$`, "m"));
+    }
+  });
+}
