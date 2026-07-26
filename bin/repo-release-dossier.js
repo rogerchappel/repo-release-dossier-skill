@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 import { writeFile } from "node:fs/promises";
+import path from "node:path";
 import { analyzeRepository } from "../src/analyze.js";
 import { renderDossier } from "../src/render.js";
+
+class UsageError extends Error {}
 
 function usage() {
   return `Usage: repo-release-dossier --repo <path> [--out <file>] [--json] [--fixture]
@@ -21,15 +24,21 @@ function parseArgs(argv) {
     if (arg === "--help" || arg === "-h") {
       args.help = true;
     } else if (arg === "--repo") {
+      if (!argv[i + 1] || argv[i + 1].startsWith("--")) {
+        throw new UsageError("--repo requires a value.");
+      }
       args.repo = argv[++i];
     } else if (arg === "--out") {
+      if (!argv[i + 1] || argv[i + 1].startsWith("--")) {
+        throw new UsageError("--out requires a value.");
+      }
       args.out = argv[++i];
     } else if (arg === "--json") {
       args.json = true;
     } else if (arg === "--fixture") {
       args.fixture = true;
     } else {
-      throw new Error(`Unknown argument: ${arg}`);
+      throw new UsageError(`Unknown argument: ${arg}`);
     }
   }
   return args;
@@ -42,17 +51,34 @@ async function main() {
     return;
   }
 
-  const evidence = await analyzeRepository(args.repo, { fixture: args.fixture });
-  const output = args.json ? `${JSON.stringify(evidence, null, 2)}\n` : renderDossier(evidence);
-
   if (args.out) {
+    await writeFile(args.out, "", "utf8");
+    const evidence = await analyzeRepository(args.repo, { fixture: args.fixture });
+    evidence.sideEffects = describeOutput(args.repo, args.out);
+    const output = args.json ? `${JSON.stringify(evidence, null, 2)}\n` : renderDossier(evidence);
     await writeFile(args.out, output, "utf8");
   } else {
+    const evidence = await analyzeRepository(args.repo, { fixture: args.fixture });
+    const output = args.json ? `${JSON.stringify(evidence, null, 2)}\n` : renderDossier(evidence);
     process.stdout.write(output);
   }
 }
 
+function describeOutput(repoPath, outputPath) {
+  const repo = path.resolve(repoPath);
+  const output = path.resolve(outputPath);
+  const relative = path.relative(repo, output);
+  const artifact = relative && !relative.startsWith(`..${path.sep}`) && relative !== ".."
+    ? relative
+    : output;
+  return `wrote output artifact ${artifact}`;
+}
+
 main().catch((error) => {
-  console.error(error.message);
+  if (error instanceof UsageError) {
+    console.error(`Error: ${error.message}\n\n${usage()}`);
+  } else {
+    console.error(error.message);
+  }
   process.exitCode = 1;
 });
