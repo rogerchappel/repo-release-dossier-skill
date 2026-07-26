@@ -40,6 +40,25 @@ function dirtyPaths(porcelain) {
   return [...paths].sort();
 }
 
+function copiedPaths(nameStatus) {
+  if (!nameStatus) return [];
+
+  const entries = nameStatus.split("\0");
+  const paths = new Set();
+  for (let index = 0; index < entries.length; index += 1) {
+    const status = entries[index];
+    if (!status) continue;
+
+    const source = entries[++index];
+    if (source) paths.add(source);
+    if (status.startsWith("C") || status.startsWith("R")) {
+      const destination = entries[++index];
+      if (destination) paths.add(destination);
+    }
+  }
+  return [...paths];
+}
+
 export async function collectGitEvidence(repo, options = {}) {
   const inside = await git(repo, ["rev-parse", "--is-inside-work-tree"]);
   const topLevel = inside.ok ? await git(repo, ["rev-parse", "--show-toplevel"]) : { ok: false, stdout: "" };
@@ -60,13 +79,23 @@ export async function collectGitEvidence(repo, options = {}) {
 
   const status = await git(repo, ["status", "--short"]);
   const porcelain = await git(repo, ["status", "--porcelain=v1", "-z"]);
+  const stagedNames = await git(repo, ["diff", "--cached", "--name-status", "-z", "--find-copies-harder"]);
   const commits = await git(repo, ["log", "--oneline", "-n", "8"]);
+  const changedFiles = porcelain.ok
+    ? [...new Set([...dirtyPaths(porcelain.stdout), ...(stagedNames.ok ? copiedPaths(stagedNames.stdout) : [])])].sort()
+    : [];
+  const warnings = [status, porcelain, stagedNames, commits]
+    .filter((item) => !item.ok)
+    .map((item) => item.stderr);
+  if (status.ok && status.stdout) {
+    warnings.push("Working tree is dirty; commit, stash, or discard every changed path before release.");
+  }
 
   return {
     available: inside.ok,
     status: status.ok ? status.stdout : "",
     recentCommits: commits.ok && commits.stdout ? commits.stdout.split("\n") : [],
-    changedFiles: porcelain.ok ? dirtyPaths(porcelain.stdout) : [],
-    warnings: [status, porcelain, commits].filter((item) => !item.ok).map((item) => item.stderr)
+    changedFiles,
+    warnings
   };
 }

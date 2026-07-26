@@ -61,7 +61,7 @@ test("warns when verification scripts are missing", async () => {
   assert.equal(evidence.classification, "hold");
 });
 
-test("a clean Git repository can ship", async (t) => {
+test("a clean Git repository remains free of dirty-tree warnings", async (t) => {
   const repo = await createGitFixture();
   t.after(() => rm(repo, { recursive: true, force: true }));
 
@@ -70,6 +70,7 @@ test("a clean Git repository can ship", async (t) => {
   assert.equal(evidence.classification, "hold");
   assert.equal(evidence.git.status, "");
   assert.deepEqual(evidence.git.changedFiles, []);
+  assert.doesNotMatch(evidence.warnings.join("\n"), /working tree is dirty/i);
   assert.doesNotMatch(renderDossier(evidence), /^PASS:/m);
   assert.match(evidence.git.recentCommits[0], /initial fixture/);
 });
