@@ -17,6 +17,12 @@ for (const file of requiredFiles) {
 
 const evidence = await analyzeRepository("fixtures/sample-repo", { fixture: true });
 const rendered = renderDossier(evidence);
+if (evidence.classification !== "ship" || evidence.warnings.length !== 0) {
+  throw new Error("Clean fixture evidence should remain ready to ship.");
+}
+if (!rendered.includes("PASS: required docs and verification evidence are present")) {
+  throw new Error("Clean fixture dossier should retain its PASS summary.");
+}
 if (!rendered.includes("## Release Candidate Notes")) {
   throw new Error("Rendered dossier is missing release candidate notes.");
 }

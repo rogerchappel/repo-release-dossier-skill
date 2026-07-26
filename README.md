@@ -31,7 +31,13 @@ The markdown dossier includes:
 Dirty paths come from Git porcelain status, so the changed-file list includes
 untracked, staged, unstaged, renamed, copied, and deleted paths. For renames and
 copies, both the original and destination paths are reported. Markdown and JSON
-use the same `git.changedFiles` list.
+use the same `git.changedFiles` list. Any dirty path adds an unresolved warning,
+prevents a `ship` classification, and prevents the Markdown summary from
+reporting `PASS`.
+
+`--fixture` treats a target without its own Git worktree as intentionally clean
+so checked-in examples remain deterministic. If the fixture path is itself a
+Git worktree, its real status is inspected and dirty paths still block `ship`.
 
 ## Safety
 
