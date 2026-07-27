@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { analyzeRepository } from "../src/analyze.js";
 import { renderDossier } from "../src/render.js";
@@ -51,16 +52,37 @@ async function main() {
     return;
   }
 
+  const evidence = await analyzeRepository(args.repo, { fixture: args.fixture });
   if (args.out) {
-    await writeFile(args.out, "", "utf8");
-    const evidence = await analyzeRepository(args.repo, { fixture: args.fixture });
     evidence.sideEffects = describeOutput(args.repo, args.out);
     const output = args.json ? `${JSON.stringify(evidence, null, 2)}\n` : renderDossier(evidence);
-    await writeFile(args.out, output, "utf8");
+    await replaceFileAtomically(args.out, output);
   } else {
-    const evidence = await analyzeRepository(args.repo, { fixture: args.fixture });
     const output = args.json ? `${JSON.stringify(evidence, null, 2)}\n` : renderDossier(evidence);
     process.stdout.write(output);
+  }
+}
+
+async function replaceFileAtomically(outputPath, contents) {
+  const directory = path.dirname(outputPath);
+  const temporaryPath = path.join(
+    directory,
+    `.${path.basename(outputPath)}.${process.pid}.${randomUUID()}.tmp`
+  );
+  let replaced = false;
+
+  try {
+    await writeFile(temporaryPath, contents, { encoding: "utf8", flag: "wx" });
+    await rename(temporaryPath, outputPath);
+    replaced = true;
+  } finally {
+    if (!replaced) {
+      await unlink(temporaryPath).catch((error) => {
+        if (error.code !== "ENOENT") {
+          throw error;
+        }
+      });
+    }
   }
 }
 

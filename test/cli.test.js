@@ -37,7 +37,7 @@ test("markdown output is written after collecting clean repository evidence", as
   assert.equal(status, "?? dossier.md\n");
   assert.match(dossier, /Classification: ship/);
   assert.match(dossier, /Side effects: wrote output artifact dossier\.md/);
-  assert.match(dossier, /Working tree: clean/);
+  assert.match(dossier, /Working tree: PASS clean or fixture/);
   assert.doesNotMatch(dossier, /^  - dossier\.md$/m);
 });
 
