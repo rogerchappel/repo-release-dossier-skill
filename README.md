@@ -35,11 +35,13 @@ use the same `git.changedFiles` list. Any dirty path adds an unresolved warning,
 prevents a `ship` classification, and prevents the Markdown summary from
 reporting `PASS`.
 
-When `--out` points inside the inspected repository, the CLI creates that file
-before collecting its final evidence. The resulting Markdown or JSON therefore
-reports the output artifact as a dirty path and cannot claim the repository is
-clean or `ship`-ready. The `sideEffects` field names the written artifact.
-Writing outside the inspected repository does not dirty its working tree.
+The CLI collects evidence and renders the complete dossier before changing the
+path supplied to `--out`. It then writes a temporary artifact in the output
+directory and atomically replaces the destination. Analysis, rendering, or
+write failures preserve any existing destination, and temporary artifacts are
+removed. Consequently, an output created inside the inspected repository is
+not part of that run's Git evidence; it appears in the next run. The
+`sideEffects` field still names the written artifact.
 
 `--fixture` treats a target without its own Git worktree as intentionally clean
 so checked-in examples remain deterministic. If the fixture path is itself a
@@ -49,7 +51,8 @@ Git worktree, its real status is inspected and dirty paths still block `ship`.
 
 This tool is read-only by default. It does not tag, publish, merge, push, or call
 external services. The `--out` option writes only the generated dossier path
-chosen by the caller, and the dossier discloses that side effect.
+chosen by the caller, and the dossier discloses that side effect. Replacement
+is atomic, so a failed run does not truncate a previously generated dossier.
 
 ## Examples
 
