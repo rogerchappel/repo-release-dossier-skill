@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { cp, mkdtemp, readFile, rm } from "node:fs/promises";
+import { cp, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -25,7 +25,7 @@ async function createCleanRepository() {
   return { parent, repo };
 }
 
-test("output inside a clean repository is reflected in markdown evidence", async (t) => {
+test("markdown output is written after collecting clean repository evidence", async (t) => {
   const { parent, repo } = await createCleanRepository();
   t.after(() => rm(parent, { recursive: true, force: true }));
   const output = path.join(repo, "dossier.md");
@@ -35,13 +35,13 @@ test("output inside a clean repository is reflected in markdown evidence", async
   const { stdout: status } = await git(repo, "status", "--short");
   const dossier = await readFile(output, "utf8");
   assert.equal(status, "?? dossier.md\n");
-  assert.match(dossier, /Classification: incubate/);
+  assert.match(dossier, /Classification: ship/);
   assert.match(dossier, /Side effects: wrote output artifact dossier\.md/);
-  assert.match(dossier, /Working tree: WARN dirty/);
-  assert.match(dossier, /^  - dossier\.md$/m);
+  assert.match(dossier, /Working tree: clean/);
+  assert.doesNotMatch(dossier, /^  - dossier\.md$/m);
 });
 
-test("output inside a clean repository is reflected in JSON evidence", async (t) => {
+test("JSON output is written after collecting clean repository evidence", async (t) => {
   const { parent, repo } = await createCleanRepository();
   t.after(() => rm(parent, { recursive: true, force: true }));
   const output = path.join(repo, "dossier.json");
@@ -51,10 +51,32 @@ test("output inside a clean repository is reflected in JSON evidence", async (t)
   const { stdout: status } = await git(repo, "status", "--short");
   const evidence = JSON.parse(await readFile(output, "utf8"));
   assert.equal(status, "?? dossier.json\n");
-  assert.equal(evidence.classification, "incubate");
+  assert.equal(evidence.classification, "ship");
   assert.equal(evidence.sideEffects, "wrote output artifact dossier.json");
-  assert.deepEqual(evidence.git.changedFiles, ["dossier.json"]);
-  assert.match(evidence.warnings.join("\n"), /working tree is dirty/i);
+  assert.deepEqual(evidence.git.changedFiles, []);
+  assert.doesNotMatch(evidence.warnings.join("\n"), /working tree is dirty/i);
+});
+
+test("analysis failure preserves existing output and leaves no temporary artifact", async (t) => {
+  const parent = await mkdtemp(path.join(tmpdir(), "release-dossier-cli-failure-"));
+  t.after(() => rm(parent, { recursive: true, force: true }));
+  const repo = path.join(parent, "repo");
+  const output = path.join(parent, "dossier.md");
+  await cp("fixtures/sample-repo", repo, { recursive: true });
+  await writeFile(path.join(repo, "package.json"), "{broken", "utf8");
+  await writeFile(output, "KEEP THIS CONTENT", "utf8");
+
+  await assert.rejects(
+    execFileAsync(process.execPath, [cli, "--repo", repo, "--fixture", "--out", output]),
+    (error) => {
+      assert.equal(error.code, 1);
+      assert.match(error.stderr, /Expected property name|JSON/);
+      return true;
+    }
+  );
+
+  assert.equal(await readFile(output, "utf8"), "KEEP THIS CONTENT");
+  assert.deepEqual(await readdir(parent), ["dossier.md", "repo"]);
 });
 
 for (const option of ["--repo", "--out"]) {
