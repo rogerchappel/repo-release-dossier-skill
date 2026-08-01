@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { cp, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -59,6 +59,27 @@ test("warns when verification scripts are missing", async () => {
   assert.equal(evidence.package.verificationScripts.length, 0);
   assert.ok(evidence.warnings.some((warning) => warning.includes("No package.json")));
   assert.equal(evidence.classification, "hold");
+});
+
+test("placeholder test script cannot produce a ship classification", async (t) => {
+  const parent = await mkdtemp(path.join(tmpdir(), "dossier-placeholder-"));
+  const repo = path.join(parent, "sample-repo");
+  t.after(() => rm(parent, { recursive: true, force: true }));
+  await cp("fixtures/sample-repo", repo, { recursive: true });
+  const packagePath = path.join(repo, "package.json");
+  const pkg = JSON.parse(await readFile(packagePath, "utf8"));
+  pkg.scripts = { test: "echo \"Error: no test specified\" && exit 1" };
+  await writeFile(packagePath, JSON.stringify(pkg));
+
+  const evidence = await analyzeRepository(repo, { fixture: true });
+  const markdown = renderDossier(evidence);
+
+  assert.deepEqual(evidence.package.verificationScripts, []);
+  assert.ok(evidence.warnings.includes("Ignored npm no-test placeholder scripts: test."));
+  assert.notEqual(evidence.classification, "ship");
+  assert.match(markdown, /FAIL: no verification scripts were detected/);
+  assert.match(markdown, /WARN: Ignored npm no-test placeholder scripts: test\./);
+  assert.doesNotMatch(markdown, /PASS: npm run test/);
 });
 
 test("a clean Git repository remains free of dirty-tree warnings", async (t) => {
