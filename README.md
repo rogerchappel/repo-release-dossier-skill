@@ -77,6 +77,12 @@ npm run smoke
 bash scripts/validate.sh
 ```
 
+Verification evidence comes from non-empty string-valued `test`, `check`,
+`build`, `lint`, `smoke`, `verify`, and `typecheck` scripts (including their
+namespaced variants, such as `check:types`). The default npm failing test
+placeholder (`echo "Error: no test specified" && exit 1`), blank values, and
+non-string values are warnings rather than usable release evidence.
+
 ## Limitations
 
 - Package script detection currently targets `package.json`.
