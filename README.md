@@ -77,6 +77,17 @@ npm run smoke
 bash scripts/validate.sh
 ```
 
+These commands are part of the published package and can also be run from an
+unpacked npm tarball. Maintainers additionally verify the installed tarball,
+including its CLI and the complete validation command above, with:
+
+```bash
+node scripts/packed-artifact-smoke.js
+```
+
+That packaging smoke test is intended for a source checkout because it creates
+and installs a fresh tarball of the current tree.
+
 Verification evidence comes from non-empty string-valued `test`, `check`,
 `build`, `lint`, `smoke`, `verify`, and `typecheck` scripts (including their
 namespaced variants, such as `check:types`). The default npm failing test
