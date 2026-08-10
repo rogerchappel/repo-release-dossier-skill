@@ -20,6 +20,7 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run smoke
+      - run: npm run smoke:docs
       - name: Validate packed artifact
         run: node scripts/packed-artifact-smoke.js
       - name: Validate exported tree
