@@ -13,10 +13,14 @@ readiness summary.
 
 ## Tools
 
-Run the local CLI:
+This package is not currently published to the public npm registry. Run the CLI
+from a source checkout:
 
 ```bash
-npx repo-release-dossier-skill --repo .
+git clone https://github.com/rogerchappel/repo-release-dossier-skill.git
+cd repo-release-dossier-skill
+npm install
+npm exec -- repo-release-dossier --repo .
 ```
 
 During local development in this repo:
@@ -56,6 +60,7 @@ Run:
 npm test
 npm run check
 npm run smoke
+npm run smoke:docs
 ```
 
 The fixture-backed tests verify package script detection, required docs checks,

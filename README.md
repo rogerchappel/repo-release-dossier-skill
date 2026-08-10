@@ -6,10 +6,14 @@ release notes. It is read-only unless an output path is explicitly requested.
 
 ## Quickstart
 
+This package is not currently published to the public npm registry. Run it from
+a source checkout instead:
+
 ```bash
+git clone https://github.com/rogerchappel/repo-release-dossier-skill.git
+cd repo-release-dossier-skill
 npm install
-npm run smoke
-node bin/repo-release-dossier.js --repo . --out release-dossier.md
+npm exec -- repo-release-dossier --repo .
 ```
 
 ## CLI
@@ -74,12 +78,13 @@ node bin/repo-release-dossier.js --repo fixtures/sample-repo --fixture --json
 npm test
 npm run check
 npm run smoke
+npm run smoke:docs
 bash scripts/validate.sh
 ```
 
-These commands are part of the published package and can also be run from an
-unpacked npm tarball. Maintainers additionally verify the installed tarball,
-including its CLI and the complete validation command above, with:
+These commands are included in a source checkout and in the npm tarball created
+from it. Maintainers additionally verify the installed tarball, including its
+CLI and the complete validation command above, with:
 
 ```bash
 node scripts/packed-artifact-smoke.js
