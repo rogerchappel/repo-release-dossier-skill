@@ -32,3 +32,6 @@ bash scripts/validate.sh
 - JavaScript package metadata is supported first.
 - Fixtures without their own Git metadata intentionally report Git as unavailable.
 - The readiness score is advisory and should not replace maintainer review.
+- Up to 10 detected npm verification scripts run serially in a disposable copy,
+  with a 30-second timeout per command. Failure, timeout, unavailable npm, and
+  skipped execution are warnings and cannot produce a `ship` classification.
