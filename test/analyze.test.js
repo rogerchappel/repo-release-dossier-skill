@@ -82,6 +82,28 @@ test("placeholder test script cannot produce a ship classification", async (t) =
   assert.doesNotMatch(markdown, /PASS: npm run test/);
 });
 
+test("a failing verification command cannot produce ship evidence", async (t) => {
+  const parent = await mkdtemp(path.join(tmpdir(), "dossier-failing-command-"));
+  const repo = path.join(parent, "sample-repo");
+  t.after(() => rm(parent, { recursive: true, force: true }));
+  await cp("fixtures/sample-repo", repo, { recursive: true });
+  const packagePath = path.join(repo, "package.json");
+  const pkg = JSON.parse(await readFile(packagePath, "utf8"));
+  pkg.scripts = { test: "node -e \"process.exit(7)\"" };
+  await writeFile(packagePath, JSON.stringify(pkg));
+
+  const evidence = await analyzeRepository(repo, { fixture: true });
+  const markdown = renderDossier(evidence);
+
+  assert.equal(evidence.package.verificationResults[0].status, "failed");
+  assert.equal(evidence.package.verificationResults[0].exitCode, 7);
+  assert.notEqual(evidence.classification, "ship");
+  assert.ok(evidence.score < 85);
+  assert.match(evidence.warnings.join("\n"), /Verification failed.*exit 7/);
+  assert.match(markdown, /FAIL: npm run test \(command exited nonzero; exit 7\)/);
+  assert.doesNotMatch(markdown, /PASS: npm run test/);
+});
+
 test("a clean Git repository remains free of dirty-tree warnings", async (t) => {
   const repo = await createGitFixture();
   t.after(() => rm(repo, { recursive: true, force: true }));
