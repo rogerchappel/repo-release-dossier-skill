@@ -14,7 +14,7 @@ export function renderDossier(evidence) {
     "",
     "## Verification",
     "",
-    ...renderVerification(evidence.package.verificationScripts),
+    ...renderVerification(evidence.package.verificationScripts, evidence.package.verificationResults),
     "",
     "## Git Evidence",
     "",
@@ -46,9 +46,16 @@ function summaryLine(evidence) {
   return "FAIL: release evidence is incomplete; hold the release candidate until gaps are closed.";
 }
 
-function renderVerification(scripts) {
+function renderVerification(scripts, results = []) {
   if (!scripts.length) return ["- FAIL: no verification scripts were detected."];
-  return scripts.map((script) => `- PASS: npm run ${script}`);
+  const byScript = new Map(results.map((result) => [result.script, result]));
+  return scripts.map((script) => {
+    const result = byScript.get(script);
+    if (!result) return `- WARN: npm run ${script} (detected; not executed)`;
+    if (result.status === "passed") return `- PASS: npm run ${script} (executed successfully)`;
+    if (result.status === "failed") return `- FAIL: npm run ${script} (${result.reason}; exit ${result.exitCode})`;
+    return `- WARN: npm run ${script} (${result.status}: ${result.reason})`;
+  });
 }
 
 function renderGit(git) {
