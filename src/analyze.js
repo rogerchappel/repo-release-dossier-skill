@@ -7,7 +7,7 @@ export async function analyzeRepository(repoPath, options = {}) {
   const repo = path.resolve(repoPath);
   const [git, pkg, docs] = await Promise.all([
     collectGitEvidence(repo, options),
-    collectPackageEvidence(repo),
+    collectPackageEvidence(repo, options),
     collectDocsEvidence(repo)
   ]);
 
@@ -32,6 +32,9 @@ function computeScore({ git, pkg, docs, warnings }) {
   if (!git.available) score -= 10;
   if (git.status) score -= 10;
   if (!pkg.verificationScripts.length) score -= 25;
+  score -= pkg.verificationResults.filter((result) => result.status === "failed").length * 25;
+  score -= pkg.verificationResults.filter((result) => result.status === "unavailable").length * 15;
+  score -= pkg.verificationResults.filter((result) => result.status === "skipped").length * 10;
   score -= docs.warnings.length * 10;
   score -= warnings.filter((warning) => /missing|No /.test(warning)).length * 5;
   return Math.max(0, score);

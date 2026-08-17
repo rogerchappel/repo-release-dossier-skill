@@ -5,10 +5,10 @@ import os from "node:os";
 import path from "node:path";
 import { collectPackageEvidence } from "../src/package-inspector.js";
 
-async function inspectScripts(scripts) {
+async function inspectScripts(scripts, options = { executeVerification: false }) {
   const repo = await mkdtemp(path.join(os.tmpdir(), "dossier-package-"));
   await writeFile(path.join(repo, "package.json"), JSON.stringify({ name: "fixture", scripts }));
-  return collectPackageEvidence(repo);
+  return collectPackageEvidence(repo, options);
 }
 
 test("retains legitimate verification script bodies", async () => {
@@ -26,7 +26,38 @@ test("retains legitimate verification script bodies", async () => {
   assert.deepEqual(evidence.verificationScripts, [
     "test", "check:types", "build", "lint", "smoke", "verify", "typecheck"
   ]);
+  assert.equal(evidence.verificationResults.every((result) => result.status === "skipped"), true);
+  assert.equal(evidence.warnings.every((warning) => warning.includes("Verification skipped")), true);
+});
+
+test("records successful verification execution", async () => {
+  const evidence = await inspectScripts({ test: "node -e \"process.exit(0)\"" }, {});
+
+  assert.deepEqual(evidence.verificationResults, [
+    { script: "test", status: "passed", command: "npm run test" }
+  ]);
   assert.deepEqual(evidence.warnings, []);
+});
+
+test("records nonzero verification execution as a failure", async () => {
+  const evidence = await inspectScripts({ test: "node -e \"process.exit(7)\"" }, {});
+
+  assert.equal(evidence.verificationResults[0].status, "failed");
+  assert.equal(evidence.verificationResults[0].exitCode, 7);
+  assert.match(evidence.warnings[0], /Verification failed: npm run test \(exit 7\)/);
+});
+
+test("records verification as unavailable when npm cannot be started", async () => {
+  const evidence = await inspectScripts(
+    { test: "node --test", check: "node check.js" },
+    { npmCommand: "definitely-not-an-npm-executable" }
+  );
+
+  assert.deepEqual(evidence.verificationResults.map(({ script, status }) => ({ script, status })), [
+    { script: "test", status: "unavailable" },
+    { script: "check", status: "unavailable" }
+  ]);
+  assert.equal(evidence.warnings.length, 2);
 });
 
 test("rejects npm placeholders, blank bodies, and non-string bodies", async () => {

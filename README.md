@@ -27,7 +27,7 @@ repo-release-dossier --repo <path> [--out release-dossier.md] [--json] [--fixtur
 The markdown dossier includes:
 
 - readiness classification and score
-- verification commands detected from package scripts
+- verification commands detected from package scripts and their execution results
 - git status, every dirty path, and recent commits
 - required documentation status
 - unresolved risks and release-candidate notes
@@ -98,6 +98,17 @@ Verification evidence comes from non-empty string-valued `test`, `check`,
 namespaced variants, such as `check:types`). The default npm failing test
 placeholder (`echo "Error: no test specified" && exit 1`), blank values, and
 non-string values are warnings rather than usable release evidence.
+
+Detected commands are executed serially with `npm run` in a temporary copy of
+the target, never in the target repository itself. Each command has a 30-second
+timeout, output is bounded, and at most 10 commands are attempted. The JSON
+`package.verificationScripts` array records detection; the corresponding
+`package.verificationResults` entries record `passed`, `failed`, `unavailable`,
+or `skipped`. Only `passed` is rendered as `PASS`. A nonzero exit, timeout,
+missing npm executable, disabled execution, or command beyond the limit adds a
+warning, reduces readiness, and prevents `ship`. Temporary copies are removed
+after inspection, preserving the documented read-only target-repository
+contract.
 
 ## Limitations
 

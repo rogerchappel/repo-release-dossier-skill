@@ -9,7 +9,7 @@ test("renders release dossier sections", async () => {
 
   assert.match(markdown, /^# Release Dossier: sample-release-target/m);
   assert.match(markdown, /## Verification/);
-  assert.match(markdown, /PASS: npm run test/);
+  assert.match(markdown, /PASS: npm run test \(executed successfully\)/);
   assert.match(markdown, /## Risks And Warnings/);
   assert.match(markdown, /Recommended classification: ship/);
 });
