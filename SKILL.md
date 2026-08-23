@@ -34,8 +34,10 @@ node bin/repo-release-dossier.js --repo fixtures/sample-repo --fixture
 This skill is read-only unless the caller supplies `--out`. It may inspect
 files, package scripts, git status, and recent commits. Verification scripts run
 serially in a disposable copy, with a 30-second timeout per command and a
-10-command limit, so their side effects do not modify the target. With `--out`,
-it writes only the requested dossier; an output inside the inspected repository
+10-command limit, so their side effects do not modify the target. A verification
+command that invokes this CLI again retains detected-script evidence but skips
+nested execution, preventing recursive documentation or dossier smokes. With
+`--out`, it writes only the requested dossier; an output inside the inspected repository
 is intentionally absent from that run's already-collected Git evidence and is
 visible on the next run.
 It must not push, merge, tag, publish packages, change branch protection, edit
