@@ -18,11 +18,14 @@ for (const file of ["README.md", "SKILL.md"]) {
 const { stdout } = await execFileAsync(
   "npm",
   ["exec", "--", "repo-release-dossier", "--repo", "."],
-  { cwd: process.cwd(), env: process.env }
+  { cwd: process.cwd(), env: process.env, timeout: 10_000 }
 );
 
 if (!stdout.includes("# Release Dossier: repo-release-dossier-skill")) {
   throw new Error("The documented command did not produce a dossier for this checkout.");
+}
+if (/timed out|Verification failed: npm run smoke:docs/.test(stdout)) {
+  throw new Error("The documented command recursively executed its active documentation smoke.");
 }
 
 console.log("documented usage smoke ok");

@@ -39,6 +39,19 @@ test("records successful verification execution", async () => {
   assert.deepEqual(evidence.warnings, []);
 });
 
+test("skips execution inside an active dossier verification command", async () => {
+  const evidence = await inspectScripts(
+    { test: "node -e \"process.exit(0)\"", "smoke:docs": "npm exec -- repo-release-dossier --repo ." },
+    { environment: { REPO_RELEASE_DOSSIER_VERIFY_ACTIVE: "1" } }
+  );
+
+  assert.deepEqual(evidence.verificationResults, [
+    { script: "test", status: "skipped", reason: "nested dossier verification" },
+    { script: "smoke:docs", status: "skipped", reason: "nested dossier verification" }
+  ]);
+  assert.equal(evidence.warnings.every((warning) => warning.includes("nested dossier verification")), true);
+});
+
 test("records nonzero verification execution as a failure", async () => {
   const evidence = await inspectScripts({ test: "node -e \"process.exit(7)\"" }, {});
 
