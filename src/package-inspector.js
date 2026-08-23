@@ -8,6 +8,7 @@ import { readJson } from "./fs-utils.js";
 const execFileAsync = promisify(execFile);
 const MAX_SCRIPTS = 10;
 const SCRIPT_TIMEOUT_MS = 30_000;
+const ACTIVE_VERIFICATION_ENV = "REPO_RELEASE_DOSSIER_VERIFY_ACTIVE";
 
 export async function collectPackageEvidence(repo, options = {}) {
   const pkg = await readJson(path.join(repo, "package.json"));
@@ -74,6 +75,10 @@ async function runVerificationScripts(repo, scripts, options) {
   if (options.executeVerification === false) {
     return scripts.map((script) => ({ script, status: "skipped", reason: "execution disabled" }));
   }
+  const environment = options.environment ?? process.env;
+  if (environment[ACTIVE_VERIFICATION_ENV] === "1") {
+    return scripts.map((script) => ({ script, status: "skipped", reason: "nested dossier verification" }));
+  }
 
   const sandbox = await mkdtemp(path.join(tmpdir(), "release-dossier-verify-"));
   const copy = path.join(sandbox, "repo");
@@ -88,7 +93,7 @@ async function runVerificationScripts(repo, scripts, options) {
       try {
         await execFileAsync(options.npmCommand ?? "npm", ["run", script], {
           cwd: copy,
-          env: { ...process.env, CI: "true" },
+          env: { ...environment, CI: "true", [ACTIVE_VERIFICATION_ENV]: "1" },
           timeout: SCRIPT_TIMEOUT_MS,
           maxBuffer: 1024 * 1024
         });
