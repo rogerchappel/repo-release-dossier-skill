@@ -101,8 +101,11 @@ non-string values are warnings rather than usable release evidence.
 
 Detected commands are executed serially with `npm run` in a temporary copy of
 the target, never in the target repository itself. Each command has a 30-second
-timeout, output is bounded, and at most 10 commands are attempted. The JSON
-`package.verificationScripts` array records detection; the corresponding
+timeout, output is bounded, and at most 10 commands are attempted. If one of
+those commands invokes `repo-release-dossier` again, the nested inspection
+still detects the repository's verification scripts but skips executing them;
+this recursion guard keeps source-checkout documentation smokes bounded. The
+JSON `package.verificationScripts` array records detection; the corresponding
 `package.verificationResults` entries record `passed`, `failed`, `unavailable`,
 or `skipped`. Only `passed` is rendered as `PASS`. A nonzero exit, timeout,
 missing npm executable, disabled execution, or command beyond the limit adds a
