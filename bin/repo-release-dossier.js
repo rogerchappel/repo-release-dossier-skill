@@ -20,8 +20,16 @@ Options:
 
 function parseArgs(argv) {
   const args = { repo: process.cwd(), out: "", json: false, fixture: false };
+  const seen = new Set();
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
+    const option = arg === "-h" ? "--help" : arg;
+    if (["--help", "--repo", "--out", "--json", "--fixture"].includes(option)) {
+      if (seen.has(option)) {
+        throw new UsageError(`${option} may only be specified once.`);
+      }
+      seen.add(option);
+    }
     if (arg === "--help" || arg === "-h") {
       args.help = true;
     } else if (arg === "--repo") {
