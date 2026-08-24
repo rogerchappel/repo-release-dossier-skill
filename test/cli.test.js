@@ -93,3 +93,29 @@ for (const option of ["--repo", "--out"]) {
     );
   });
 }
+
+test("duplicate value options fail before creating either requested output", async (t) => {
+  const parent = await mkdtemp(path.join(tmpdir(), "release-dossier-duplicates-"));
+  t.after(() => rm(parent, { recursive: true, force: true }));
+  const first = path.join(parent, "first.md");
+  const second = path.join(parent, "second.md");
+  await assert.rejects(
+    execFileAsync(process.execPath, [cli, "--repo", "fixtures/sample-repo", "--fixture", "--out", first, "--out", second]),
+    (error) => {
+      assert.equal(error.code, 1);
+      assert.match(error.stderr, /Error: --out may only be specified once\./);
+      return true;
+    }
+  );
+  assert.deepEqual(await readdir(parent), []);
+});
+
+for (const option of ["--json", "--fixture", "--help"]) {
+  test(`${option} rejects repeated boolean flags`, async () => {
+    await assert.rejects(execFileAsync(process.execPath, [cli, option, option]), (error) => {
+      assert.equal(error.code, 1);
+      assert.match(error.stderr, new RegExp(`Error: ${option} may only be specified once\\.`));
+      return true;
+    });
+  });
+}
