@@ -22,6 +22,11 @@ npm exec -- repo-release-dossier --repo .
 repo-release-dossier --repo <path> [--out release-dossier.md] [--json] [--fixture]
 ```
 
+Each option may be supplied at most once. Duplicate value options such as
+`--repo` and `--out`, and repeated boolean flags such as `--json` and
+`--fixture`, are usage errors. Argument validation completes before repository
+analysis or output-file creation.
+
 ## Output
 
 The markdown dossier includes:
