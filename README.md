@@ -12,7 +12,7 @@ a source checkout instead:
 ```bash
 git clone https://github.com/rogerchappel/repo-release-dossier-skill.git
 cd repo-release-dossier-skill
-npm install
+npm ci
 npm exec -- repo-release-dossier --repo .
 ```
 
@@ -80,6 +80,7 @@ node bin/repo-release-dossier.js --repo fixtures/sample-repo --fixture --json
 ## Validation
 
 ```bash
+npm ci
 npm test
 npm run check
 npm run smoke

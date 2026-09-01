@@ -19,7 +19,7 @@ from a source checkout:
 ```bash
 git clone https://github.com/rogerchappel/repo-release-dossier-skill.git
 cd repo-release-dossier-skill
-npm install
+npm ci
 npm exec -- repo-release-dossier --repo .
 ```
 
@@ -62,6 +62,7 @@ external action that is outside this skill.
 Run:
 
 ```bash
+npm ci
 npm test
 npm run check
 npm run smoke
