@@ -1,4 +1,4 @@
-import { access } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import { analyzeRepository } from "../src/analyze.js";
 import { renderDossier } from "../src/render.js";
 
@@ -13,6 +13,19 @@ const requiredFiles = [
 
 for (const file of requiredFiles) {
   await access(file);
+}
+
+const workflow = await readFile(".github/workflows/ci.yml", "utf8");
+if (!workflow.includes("- run: npm ci")) {
+  throw new Error("CI must install dependencies with npm ci.");
+}
+if (/\bnpm install\b/.test(workflow)) {
+  throw new Error("CI must not use an unfrozen npm install.");
+}
+
+const lockfile = JSON.parse(await readFile("package-lock.json", "utf8"));
+if (lockfile.name !== "repo-release-dossier-skill" || lockfile.lockfileVersion !== 3) {
+  throw new Error("package-lock.json must be the npm lockfile for this package.");
 }
 
 const evidence = await analyzeRepository("fixtures/sample-repo", { fixture: true });
