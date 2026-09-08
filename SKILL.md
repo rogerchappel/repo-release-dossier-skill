@@ -14,7 +14,8 @@ readiness summary.
 ## Tools
 
 This package is not currently published to the public npm registry. Run the CLI
-from a source checkout:
+from a source checkout with Node.js 22 or newer. CI verifies both the supported
+minimum (Node.js 22) and the current LTS release (Node.js 24).
 
 ```bash
 git clone https://github.com/rogerchappel/repo-release-dossier-skill.git
