@@ -7,7 +7,8 @@ release notes. It is read-only unless an output path is explicitly requested.
 ## Quickstart
 
 This package is not currently published to the public npm registry. Run it from
-a source checkout instead:
+a source checkout with Node.js 22 or newer instead. CI verifies both the
+supported minimum (Node.js 22) and the current LTS release (Node.js 24).
 
 ```bash
 git clone https://github.com/rogerchappel/repo-release-dossier-skill.git
