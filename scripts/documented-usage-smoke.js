@@ -5,11 +5,15 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const documentedCommand = "npm exec -- repo-release-dossier --repo .";
 const strictArgumentStatement = "Each option may be supplied at most once.";
+const explicitRepositoryStatement = "`--repo <path>` is required";
 
 for (const file of ["README.md", "SKILL.md"]) {
   const contents = await readFile(file, "utf8");
   if (!contents.includes(documentedCommand)) {
     throw new Error(`${file} must include the tested source-checkout command.`);
+  }
+  if (!contents.includes(explicitRepositoryStatement)) {
+    throw new Error(`${file} must document the required repository target.`);
   }
   if (file === "README.md" && !contents.includes(strictArgumentStatement)) {
     throw new Error("README.md must document strict duplicate-option handling.");

@@ -28,6 +28,10 @@ Each option may be supplied at most once. Duplicate value options such as
 `--fixture`, are usage errors. Argument validation completes before repository
 analysis or output-file creation.
 
+`--repo <path>` is required for every dossier run; the CLI never silently uses
+the current working directory. `--help` is the only command that does not need
+a repository target.
+
 ## Output
 
 The markdown dossier includes:
