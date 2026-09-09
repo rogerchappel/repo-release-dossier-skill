@@ -19,7 +19,7 @@ Options:
 }
 
 function parseArgs(argv) {
-  const args = { repo: process.cwd(), out: "", json: false, fixture: false };
+  const args = { repo: "", out: "", json: false, fixture: false };
   const seen = new Set();
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -58,6 +58,9 @@ async function main() {
   if (args.help) {
     console.log(usage());
     return;
+  }
+  if (!args.repo) {
+    throw new UsageError("--repo <path> is required.");
   }
 
   const evidence = await analyzeRepository(args.repo, { fixture: args.fixture });
