@@ -9,6 +9,36 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const cli = path.resolve("bin/repo-release-dossier.js");
 
+for (const args of [[], ["--json"]]) {
+  const label = args.length === 0 ? "zero arguments" : "--json without --repo";
+  test(`${label} requires an explicit repository`, async () => {
+    await assert.rejects(execFileAsync(process.execPath, [cli, ...args]), (error) => {
+      assert.equal(error.code, 1);
+      assert.match(error.stderr, /Error: --repo <path> is required\./);
+      assert.match(error.stderr, /Usage: repo-release-dossier --repo <path>/);
+      assert.equal(error.stdout, "");
+      return true;
+    });
+  });
+}
+
+test("missing --repo is rejected before creating an output file", async (t) => {
+  const parent = await mkdtemp(path.join(tmpdir(), "release-dossier-missing-repo-"));
+  t.after(() => rm(parent, { recursive: true, force: true }));
+  const output = path.join(parent, "dossier.json");
+
+  await assert.rejects(
+    execFileAsync(process.execPath, [cli, "--json", "--out", output]),
+    (error) => {
+      assert.equal(error.code, 1);
+      assert.match(error.stderr, /Error: --repo <path> is required\./);
+      return true;
+    }
+  );
+
+  assert.deepEqual(await readdir(parent), []);
+});
+
 async function git(repo, ...args) {
   return execFileAsync("git", ["-C", repo, ...args]);
 }
