@@ -11,6 +11,9 @@ readiness summary.
 - Read access to git metadata when available.
 - Optional fixture mode for tests or non-git sample projects.
 
+`--repo <path>` is required; pass the repository path explicitly. The CLI does not
+default to the current working directory; `--help` is the sole exception.
+
 ## Tools
 
 This package is not currently published to the public npm registry. Run the CLI
